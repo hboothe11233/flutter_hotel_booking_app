@@ -1,0 +1,8 @@
+{
+  "@@locale": "en",
+  "appTitle": "Hotel Booking App",
+  "overviewTab": "Overview",
+  "searchTab": "Hotels",
+  "favoritesTab": "Favorites",
+  "accountTab": "Account"
+}
