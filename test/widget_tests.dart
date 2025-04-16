@@ -16,7 +16,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 void main() {
   // Create a dummy HotelElement for testing purposes.
-  final dummyHotel = HotelElement(
+  late HotelElement dummyHotel;
+  setUp(() {
+  dummyHotel = HotelElement(
     hotelId: "1",
     name: "Test Hotel",
     destination: "Test Destination",
@@ -40,6 +42,8 @@ void main() {
       simplePricePerPerson: 750,
     ),
   );
+  });
+
 
   group('HotelCard Widget Tests', () {
     testWidgets('HotelCard (favorites layout) displays hotel details and rating overlay', (WidgetTester tester) async {
@@ -59,15 +63,28 @@ void main() {
       // Verify that the rating overlay shows the score.
       expect(find.textContaining("4.5 / 5.0"), findsOneWidget);
       // Check that the favorites icon is present.
-      expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+      expect(find.byIcon(Icons.favorite), findsOneWidget);
     });
 
     testWidgets('HotelCard (default layout) shows full details', (WidgetTester tester) async {
+
+      // Create a dummy HotelsBloc that immediately emits HotelsLoaded.
+      final hotelsBloc = HotelsBloc(hotelRepository: DummyHotelRepository());
+      hotelsBloc.emit(HotelsLoaded(hotels: [dummyHotel]));
+
       // Wrap HotelCard in a MaterialApp (FavoritesBloc is not needed for default layout).
       await tester.pumpWidget(
         MaterialApp(
-          home: HotelCard(hotelElement: dummyHotel, showRatingInfo: false),
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<HotelsBloc>.value(value: hotelsBloc),
+              BlocProvider<FavoritesBloc>(
+                create: (_) => FavoritesBloc()..emit(FavoritesLoaded(favoriteHotels: [])),
+              ),
+            ],
+            child:  HotelCard(hotelElement: dummyHotel, showRatingInfo: false),
         ),
+        )
       );
 
       // Expect to see star icons.
@@ -98,15 +115,22 @@ void main() {
       expect(find.byType(HotelCard), findsOneWidget);
     });
 
+
     testWidgets('HotelsScreen displays a list of hotels', (WidgetTester tester) async {
       // Create a dummy HotelsBloc that immediately emits HotelsLoaded.
       final hotelsBloc = HotelsBloc(hotelRepository: DummyHotelRepository());
       hotelsBloc.emit(HotelsLoaded(hotels: [dummyHotel]));
 
+      // Provide both HotelsBloc and FavoritesBloc.
       await tester.pumpWidget(
         MaterialApp(
-          home: BlocProvider<HotelsBloc>.value(
-            value: hotelsBloc,
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<HotelsBloc>.value(value: hotelsBloc),
+              BlocProvider<FavoritesBloc>(
+                create: (_) => FavoritesBloc()..emit(FavoritesLoaded(favoriteHotels: [])),
+              ),
+            ],
             child: const HotelsScreen(),
           ),
         ),
